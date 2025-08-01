@@ -18,6 +18,8 @@
 
 ## Getting Started
 
+Live demo is at https://stacklynjs.github.io/demo.
+
 First and foremost, `npm install stacklyn`.  
 *(and/or use one of the direct import methods listed below)*  
 
@@ -37,10 +39,8 @@ try {
 
     mapped.forEach(frame => console.log(frame.raw)); // log the sourcemapped stack frames
 
-    // i would've done a better guide
-    // but i've been working on this since may 26
-    // and since i wanted to release it for so long
-    // this will do for now.
+    // i would've done a better guide but i've been working on this since may 26
+    // and since i wanted to release it for so long this will do for now.
     //   - doctoon, sorry for inconvinence, docs are coming soon i promise
 }
 ```
