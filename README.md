@@ -12,7 +12,11 @@
 
 <p align="center"><code>npm install stacklyn</code></p>
 
-<p align="center">Pretty cool, right? Well there's actually even more!</p>
+<p align="center">
+    <img src="https://img.shields.io/npm/v/stacklyn" alt="npm">
+    <img src="https://img.shields.io/bundlephobia/minzip/stacklyn?label=Gzipped&color=4c5eb4" alt="Gzipped: 7KiB">
+    <img src="https://img.shields.io/badge/License-Apache--2.0-4B0082?style=flat" alt="License: Apache-2.0">
+</p>
 
 ---
 
@@ -23,7 +27,7 @@ Live demo is at https://stacklynjs.github.io/demo.
 First and foremost, `npm install stacklyn`.  
 *(and/or use one of the direct import methods listed below)*  
 
-Here's some example usage code so you don't feel lost while I finish writing the docs and demos:
+Here's some example usage code so you don't feel lost while I finish writing the docs:
 
 ```js
 import Stacklyn from "stacklyn";
@@ -34,28 +38,25 @@ try {
     // array of objects
     const parsed = Stacklyn.parse(error);
 
-    // still an array of objects
+    // still an array of objects, but with source map info
     const mapped = Stacklyn.map(parsed);
 
     mapped.forEach(frame => console.log(frame.raw)); // log the sourcemapped stack frames
-
-    // i would've done a better guide but i've been working on this since may 26
-    // and since i wanted to release it for so long this will do for now.
-    //   - doctoon, sorry for inconvinence, docs are coming soon i promise
 }
 ```
 
 ### What we offer:
-- Stacktrace Parsing (for more info, see [`parse()`](https://stacklynjs.github.io/docs?p=api/parse))
-- Turn a parsed stack back into a string (for more info, see [`stringify()`](https://stacklynjs.github.io/docs?p=api/stringify))
-- Stacktrace Converting (for more info, see [`convert()`](https://stacklynjs.github.io/docs?p=api/convert))
-- Support for V8 `CallSite` objects (for more info, see [`parseCS()`](https://stacklynjs.github.io/docs?p=api/parseCS) and [`getCallSites()`](https://stacklynjs.github.io/docs?p=api/getCallSites))
-- Source Maps (for more info, see [`map()`](https://stacklynjs.github.io/docs?p=api/map))
-- Enriching frames with context info (for more info, see [`enrich()`](https://stacklynjs.github.io/docs?p=api/enrich))
-- Make error properties enumerable (for more info, see [`serializeError()`](https://stacklynjs.github.io/docs?p=api/serializeError))
-- And best of all, supports most stack trace formats you'll come across!
+- **Stacktrace Parsing:** Convert raw and hard to read stack strings into clean, structured data.
+- **Stacktrace Stringification:** Turn a parsed stack back into a string.
+- **Stacktrace Conversion:** Transform stack traces between different formats.
+- **Structured CallSite Info:** Directly work with static data gathered from V8 `CallSite` objects.
+- **Source Map Integration:** Map minified or transpiled stack frames back to their original source files and lines for accurate debugging.
+- **Context Enrichment:** Add valuable surrounding code context to each stack frame for deeper insights.
+- **Error Serialization:** Make error properties enumerable for easier serialization and logging.
 
-<sub>*Stacklyn V2 will add even more cool stuff! See the [roadmap](https://stacklynjs.github.io/docs?p=stacklyn/roadmap) to know more.*</sub>
+And best of all, supports most stack trace formats you'll come across!
+
+<sub>*Stacklyn V2 will add even more cool stuff! See the [roadmap](#roadmap) to know more.*</sub>
 
 ### Supported Formats
 - <img height="24" src="./images/chrome.png" align="center">&nbsp; Chrome 3+ (V8)
@@ -114,6 +115,17 @@ Note that with the way stacklyn is made, it works no matter what JS env you're r
 
 This means even in CSP'd environments (e.g. file://), you can still parse stack traces :D  
 <sub>*(you cannot fetch local file information, best to use localhost for that)*</sub>
+
+---
+## Roadmap
+- Docs: In progress
+
+### V2 Roadmap
+- Extension System (`Stacklyn.createExtension`)
+- More Stack Formats (Graal.js, Hermes, JS-Interpreter, Duktape, XS, Jsish, NJS, Boa, QuickJS, LibJS)
+- Parse Bluebird extended stack traces
+- `overwrite` method to change the default runtime stack format, accepts a callback function
+---
 
 ## <img src="./images/stacklyn/Gold.png" height="32" align="center"> Contributing
 We welcome contributors!
