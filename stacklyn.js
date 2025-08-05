@@ -1,25 +1,25 @@
 /* Copyright 2025 DocToon. Licensed under Apache 2.0,
  * you may not use this file except in compliance with the License.
- * You may obtain a copy at: https://apache.org/licenses/LICENSE-2.0 */
-// ==================================================================
+ * You may obtain a copy at: https://apache.org/licenses/LICENSE-2.0
+================================================================== */
 
 /* ------------------------------------------ *\
                    WARNING:
         code quality is not the best,
    this is a v1 tho and i wrote it by myself
 \* ------------------------------------------ */
+
+"use strict";
 class Stacklyn {
-    "use strict";
     // ====== PUBLIC API - PARSING ====== \\
 
     /** Parses an error into an array of structured stack frames
-     * @param {Error} error The error object
-     * @param {{ ALLOW_CALLSITES: boolean; FULL_ERROR: boolean; }} [opts={ ALLOW_CALLSITES: false, FULL_ERROR: false }]
-     * Optional options object (see docs for more info)
+     * @param {object} error The error (must pass _isValidError)
+     * @param {object} opts Optional options object (see docs for more info)
      * @returns {object[]} Array of parsed stack frames (see docs for more info)
      */
     static parse(error, opts = { ALLOW_CALLSITES: false, FULL_ERROR: false }) {
-        if (!Stacklyn._isValidError(error)) { return; }
+        if (!Stacklyn._isValidError(error)) return;
 
         let frames, out;
         error.toString = Error.prototype.toString;
@@ -34,7 +34,7 @@ class Stacklyn {
         }
 
         // some flags to make sure it parses correctly
-        const isV8Env = !!(navigator?.userAgent?.includes("Chrome") || typeof process !== "undefined" || window?.chrome);
+        const isV8Env = window?.chrome ;
         const canGetCallSites = !!(isV8Env && opts.ALLOW_CALLSITES === true && error instanceof Error);
 
         if (canGetCallSites) {
@@ -78,12 +78,12 @@ class Stacklyn {
     }
 
     /** Parses a locally thrown V8 error with CallSite info
-     * @param {Error} error The V8 error to parse
+     * @param {Error} error The V8 error object (has to be an error, not an ordinary object)
      * @param {{ FULL_ERROR: boolean; }} [opts={ FULL_ERROR: false }] Optional options object
      * @returns {object[]} An array of parsed V8 frames with CallSite info
      */
     static parseCS(error, opts = { FULL_ERROR: false }) {
-        if (!Stacklyn._isValidError(error)) { return; }
+        if (!error instanceof Error) return;
 
         let frameIndex = 0;
         const { stack, callSites } = Stacklyn.getCallSites(error);
@@ -100,12 +100,12 @@ class Stacklyn {
     }
 
     /** Parse a V8 (chromium, chrome, nodejs...) stack frame
-     * @param {String} frame The stack frame string
+     * @param {string} frame The stack frame string
      * @param {Array} callSite The callsite (this should never be added manually)
-     * @returns {Object} Stack frame object
+     * @returns {object} Stack frame object
     */
     static parseV8(frame, callSite = undefined) {
-        if (!frame.startsWith("    at")) { return; }
+        if (!frame.startsWith("    at")) return;
 
         let parsedLocation, callerFunc;
         const env = { host: "Chromium", format: "V8", type: "browser" };
@@ -273,11 +273,11 @@ class Stacklyn {
 
     /** Parse a SpiderMonkey (firefox, safari, netscape...) stack frame
      * (im not sure if netscape actually called it spidermonkey but whatever)
-     * @param {String} frame The stack frame string
-     * @returns {Object} Stack frame object
+     * @param {string} frame The stack frame string
+     * @returns {object} Stack frame object
     */
     static parseSpiderMonkey(frame) {
-        if (!frame || frame.length < 2) { return; }
+        if (!frame || frame.length < 2) return;
 
         let parsedLocation, evalChain, callerFunc,
             env = { host: "Firefox", format: "SpiderMonkey", type: "browser" };
@@ -424,14 +424,15 @@ class Stacklyn {
     }
 
     /** Parse an IE / Edge (Legacy) stack frame
-     * @param {String} frame The stack frame string
-     * @returns {Object} Stack frame object
+     * @param {string} frame The stack frame string
+     * @returns {object} Stack frame object
     */
     static parseIE(frame) {
         let callerFunc, parsedLocation;
-        
+        const locPlaceholders = ["eval code", "Function code", "Unknown script code"];
+
         const match = frame.match(/^ {3}at\s+(.*?)\s+\((.*?)\)$/);
-        if (!match) { return; }
+        if (!match) return;
         const [, rawName, sourceURL] = match;
 
         if (["Global code", "Anonymous function"].some(name => rawName.includes(name))) {
@@ -442,7 +443,7 @@ class Stacklyn {
 
         if (sourceURL === "native code") {
             parsedLocation = { sourceURL: null, fileName: null, anonymous: true, type: "native" };
-        } else if (["eval code", "Function code", "Unknown script code"].some(path => sourceURL.includes(path))) {
+        } else if (locPlaceholders.some(path => sourceURL.includes(path))) {
             let type = sourceURL.split(" code")[0].toLowerCase();
             if (type === "unknown script") {
                 type === "unknown";
@@ -472,10 +473,34 @@ class Stacklyn {
         });
     }
 
+    /** Parse an Opera error and return structured data
+     * @param {object} error The error (must pass _isValidError)
+     * @returns {object} Stack frame object
+    */
+    static parseOpera(error) {
+        if (!Stacklyn._isValidError(error)) return;
+
+        const out = [],
+            mode = Stacklyn._detectOperaMode(error),
+            pairs = Stacklyn._getOperaPairs(Stacklyn._getOperaStack(error));
+
+        pairs.forEach(pair => {
+            if (mode === "carakan") {
+                out.push(Stacklyn.parseCarakan(pair.frame, pair.context));
+            } else if (mode === "linear-b") {
+                out.push(Stacklyn.parseLinearB(pair.frame, pair.context));
+            } else {
+                throw new Stacklyn.Error("Invalid Opera error provided for parsing");
+            }
+        });
+
+        return out;
+    }
+
     /** Parse an Opera Carakan stack frame
-     * @param {String} frame The stack frame string
-     * @param {String} context The specific line where the error occurred
-     * @returns {Object} Stack frame object
+     * @param {string} frame The stack frame string
+     * @param {string} context The specific line where the error occurred
+     * @returns {object} Stack frame object
     */
     static parseCarakan(frame, context) {
         let frameType = "thrown", callerFunc, rawName, otherSource;
@@ -531,15 +556,19 @@ class Stacklyn {
             },
             extra: { 
                 type: frameType,
-                environment: { host: "Opera", format: "carakan", type: "browser" } 
+                environment: {
+                    host: "Opera",
+                    format: "carakan",
+                    type: "browser"
+                }
             }
         });
     }
 
     /** Parse an Opera Linear-b stack frame
-     * @param {String} frame The stack frame string
-     * @param {String} context The specific line where the error occurred
-     * @returns {Object} Stack frame object
+     * @param {string} frame The stack frame string
+     * @param {string} context The specific line where the error occurred
+     * @returns {object} Stack frame object
     */
     static parseLinearB(frame, context) {
         // I am sincerely sorry for using regex here
@@ -559,17 +588,27 @@ class Stacklyn {
             : { name: null, anonymous: !rawName };
 
         return Stacklyn._buildOutputObject({
-            frameInfo: { raw: frame, func: callerFunc, location: parsedLocation },
-            extra: { environment: { host: "Opera", format: "linear-b", type: "browser" } }
+            frameInfo: { 
+                raw: frame,
+                func: callerFunc,
+                location: parsedLocation 
+            },
+            extra: {
+                environment: {
+                    host: "Opera",
+                    format: "linear-b",
+                    type: "browser"
+                }
+            }
         });
     }
 
     /** Parse an Espruino error and return structured data
-     * @param {Error} error The error to parse
-     * @returns {Object} Stack frame object
+     * @param {object} error The error (must pass _isValidError)
+     * @returns {object} Stack frame object
     */
     static parseEspruino(error) {
-        if (!Stacklyn._isValidError(error)) { return; }
+        if (!Stacklyn._isValidError(error)) return;
 
         function parseEspruinoPair(frame, context, caret) {
             let parsedLocation, callerFunc, rawName, sourceURL;
@@ -611,48 +650,28 @@ class Stacklyn {
                 },
                 extra: { 
                     environment: { 
-                        host: "Microcontroller Unit", format: "Espruino", type: "interpreter"
+                        host: "Microcontroller Unit",
+                        format: "Espruino",
+                        type: "interpreter"
                     } 
                 }
             });
         }
 
-        return Stacklyn._getEspruinoPairs(error.stack).map(pair => parseEspruinoPair(pair.frame, pair.context, pair.caret));
-    }
-
-    /** Parse an Opera error and return structured data
-     * @param {Error} error The error to parse
-     * @returns {Object} Stack frame object
-    */
-    static parseOpera(error) {
-        if (!Stacklyn._isValidError(error)) { return; }
-
-        const out = [],
-            mode = Stacklyn._detectOperaMode(error),
-            pairs = Stacklyn._getOperaPairs(Stacklyn._getOperaStack(error));
-
-        pairs.forEach(pair => {
-            if (mode === "carakan") {
-                out.push(Stacklyn.parseCarakan(pair.frame, pair.context));
-            } else if (mode === "linear-b") {
-                out.push(Stacklyn.parseLinearB(pair.frame, pair.context));
-            } else {
-                throw new Stacklyn.Error("Invalid Opera error provided for parsing");
-            }
-        });
-
-        return out;
+        return Stacklyn._getEspruinoPairs(error.stack).map(pair => 
+            parseEspruinoPair(pair.frame, pair.context, pair.caret)
+        );
     }
 
     /** Parse a function name (meant for internal use but helpful)
-     * @param {String} name Function name
-     * @param {Object} options
+     * @param {string} name Function name
+     * @param {object} options
      * @param {undefined} [options.alias=undefined] 
      * @param {undefined} [options.rawName=undefined] 
-     * @returns {Object} Function metadata
+     * @returns {object} Function metadata
     */
     static parseFunctionName(name, { alias = undefined, rawName = undefined }) {
-        if (!name || !rawName) { return; }
+        if (!name || !rawName) return;
 
         let parsed, args;
 
@@ -663,7 +682,7 @@ class Stacklyn {
         if (match) {
             try {
                 args = new Function(`return [${match[2]}]`)();
-            } catch {
+            } catch (_) {
                 args = match[2].split(", ");
             }
         }
@@ -679,16 +698,19 @@ class Stacklyn {
             const parts = cleanName.split("."), method = parts.pop(),
                 name = parts.join(".");
 
-            parsed = { name, rawName, method, alias, flags: ["DIRECT"], args, anonymous: !name };
+            parsed = { name, method, rawName, alias, flags: ["DIRECT"], args, anonymous: !name };
         } else if (["get ", "set ", "new ", "async "].some(prefix => cleanName.startsWith(prefix))) {
             // function with a prefix (e.g. "get getter")
             let [prefix, tempName] = cleanName.split(" "), method;
             if (tempName.includes(".")) {
                 const parts = tempName.split("."); method = parts.pop(); tempName = parts.join(".");
             }
-            const prefixFlag = (prefix.endsWith("et") ? prefix + "ter" : prefix === "new" ? "constructor" : prefix).toUpperCase();
+
+            const prefixMap = { get: "GETTER", set: "SETTER", new: "CONSTRUCTOR", async: "ASYNC" };
+
+            const prefixFlag = prefixMap[prefix] ?? prefix.toUpperCase();
             parsed = { 
-                name: tempName, rawName, method, alias, prefix,
+                name: tempName, method, rawName, alias, prefix,
                 flags: ["PREFIX", prefixFlag], args, anonymous: !tempName 
             };
         } else {
@@ -714,8 +736,8 @@ class Stacklyn {
 
     /** Convert between stacktrace formats
      * @param {object[]} frames
-     * @param {String} target
-     * @returns {String} A string representing a stacktrace of the target format
+     * @param {string} target
+     * @returns {string} A string representing a stacktrace of the target format
     */
     static convert(frames, target) {
         const out = [];
@@ -752,8 +774,8 @@ class Stacklyn {
     }
 
     /** Turn a parsed frame object into a stack string
-     * @param {Object} frame
-     * @returns {String} A string representing a stacktrace of the original format
+     * @param {object} frame
+     * @returns {string} A string representing a stacktrace of the original format
     */
     static stringify(frame) {
         // safeguard for people who input the parsed output directly
@@ -781,6 +803,11 @@ class Stacklyn {
         if (frame.environment.format === "V8") {
             // hello chromium my old friend
 
+            // BUG: mitigation to eval traces convert improperly (issue #1)
+            if (frame.location?.eval?.type) {
+                return "";
+            }
+
             const location = frame.location.eval
                 ? formatEvalOrigin(frame.location)
                 : (frame.location.sourceURL + lineCol);
@@ -803,6 +830,7 @@ class Stacklyn {
         } else if (frame.environment.format === "SpiderMonkey") {
             // THE LIZARD HAS BEEN PARSED, STRINGIFIED, AND ACKNOWLEDGED!
 
+            // BUG: eval traces convert improperly (issue #1)
             if (frame.location.eval && frame.location.sourceURL.includes("<anonymous>")) {
                 return "";
             }
@@ -880,7 +908,9 @@ class Stacklyn {
                 out += ` in ${frame.location.sourceURL}`;
             }
 
-            if (functionName) { out += `: In function ${functionName}${args}`; }
+            if (functionName) { 
+                out += `: In function ${functionName}${args}`; 
+            }
 
             out += `\n    ${frame.location.context || "/* no source available */"}`;
         } else if (frame.environment.format === "IE") {
@@ -921,8 +951,8 @@ class Stacklyn {
     }
 
     /** Get an error object in an accessible form
-     * @param {Error} error The error object to get non enumerable properties of
-     * @returns {Object} The error object with the properties attached
+     * @param {object} error The error to get non enumerable properties of
+     * @returns {object} The error with the properties attached
      */
     static serializeError(error) {
         // retain the prototype chain
@@ -950,8 +980,8 @@ class Stacklyn {
 
     /** Get V8 call site info from an error
      * (call this before doing anything else with the error)
-     * @param {Error} error The error object to get callsites of
-     * @returns {Object} The callsite object with all properties directly accessible
+     * @param {Error} error The error to get callsites of
+     * @returns {object[]} The callsite object with all properties directly accessible
      */
     static getCallSites(error) {
         const originalPrepare = Error.prepareStackTrace; // store the original formatter
@@ -1010,11 +1040,13 @@ class Stacklyn {
             }));
 
             // pretty much what v8 actually does
-            const stack = `${error.toString()}\n` + callSites.map(site => "    at " + site.toString()).join("\n");
+            const stack = `${error.toString()}\n${
+                callSites.map(site => "    at " + site.toString()).join("\n")
+            }`;
             error.stack = stack;
 
             return { callSites: out, stack };
-        } catch {
+        } catch (_) {
             return null;
         } finally {
             Error.prepareStackTrace = originalPrepare;
@@ -1022,9 +1054,9 @@ class Stacklyn {
     }
 
     // ====== ASYNC (use with caution) ======= \\
-    /** Make a parsed frame into one with source mapped info
-     * @param {Object} frames Array of parsed frame objects from the .parse method.
-     * @returns {Object} An object with available data retrieved from the source map.
+    /** Apply sourcemaps to parsed frames
+     * @param {object[]} frames Array of parsed frame objects from the .parse method.
+     * @returns {Promise<object[]>} An object with available data retrieved from the source map.
      * @example const res = await Stacklyn.map(parsedFrames), frames = [];
                 res.forEach(frame => frames.push(frame.raw));
                 console.log("Error: example toString header\n", frames.join("\n"));
@@ -1033,14 +1065,27 @@ class Stacklyn {
         const out = [];
         for (let frame of frames) {
             let map;
-            const { sourceURL = null, fileName = null, line = null, column = null } = frame.location;
 
-            try { map = await (await fetch(sourceURL + ".map")).json(); }
-            catch (error) {
+            const {
+                sourceURL = null,
+                fileName = null,
+                line = null,
+                column = null
+            } = frame.location;
+            const mapURL = sourceURL + ".map";
+
+            try { 
+                map = await (await fetch(mapURL)).json(); 
+            } catch (error) {
                 if (typeof require !== "undefined") {
-                    map = JSON.parse(require("fs").readFileSync(require("path").resolve(__dirname, sourceURL + ".map"), "utf8"));
+                    const read = require("fs").readFileSync;
+                    const resolve = require("path").resolve;
+
+                    map = JSON.parse(read(resolve(__dirname, mapURL), "utf8"));
                 } else {
-                    throw new Stacklyn.Error("Could not fetch source map "+sourceURL+".map:", error.toString());
+                    throw new Stacklyn.Error(
+                        `Could not fetch source map ${mapURL}:`
+                        + `\n    ${error.toString()}`);
                 }
             }
 
@@ -1064,9 +1109,9 @@ class Stacklyn {
     }
 
     /**
-     * @param {Object} frames Array of parsed frame objects from the .parse method.
-     * @param {Number} context Amount of lines above and below the actual line (default is 5, can be 0 if you only want one line)
-     * @returns {Object} An array of frames with context info (cannot be a minified file due to limitations of source mapping atm!)
+     * @param {object} frames Array of parsed frame objects from the .parse method.
+     * @param {number} context Amount of lines above and below the actual line (default is 5, can be 0 if you only want one line)
+     * @returns {Promise<object[]>} An array of frames with context info (cannot be a minified file due to limitations of source mapping atm!)
      *                   In more detail, the frame becomes:
      *                   { contextabove: string[], context: string, contextbelow: string[],  ...frame }
      * @example const parsed = Stacklyn.parse(myError);
@@ -1082,34 +1127,6 @@ class Stacklyn {
     // ====== INTERNAL API ======= \\
     // WARNING: since this is not meant for use by regular users,
     // the code here will often not be readable or not useful.
-
-    // == CLASSES
-    static _SourceMapper = class {
-        constructor(map) { this.sources = map.sources || []; this.names = map.names || []; this.mappings = this._parseMappings(map.mappings || ""); }
-
-        // eslint-disable-next-line
-        _parseMappings(e){function n(e,t){let n=0,r=0,l; var a={}; for(let e=0; e<64;)a["ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[e]]=e++; for(;null==(l=a[e[t++]])?(()=>{throw new Stacklyn.Error("bad VLQ character");})():(n|=(31&l)<<r,r+=5,32&l););return{value:(n>>1)*(1&n?-1:1),nextOffset:t};}let r=0,l=0,a=0,f=0,u=0; var o=[],s=e.split(";"); for(let t=0; t<s.length; t++){let e=0; r=0; var v=s[t]; if(v)for(;e<v.length;){var c=n(v,e),g=(r+=c.value,e=c.nextOffset,{generatedLine:t+1,generatedColumn:r}); e<v.length&&","!==v[e]&&(c=n(v,e),l+=c.value,g.sourceIndex=l,c=n(v,e=c.nextOffset),a+=c.value,g.sourceLine=a,c=n(v,e=c.nextOffset),f+=c.value,g.sourceColumn=f,(e=c.nextOffset)<v.length)&&","!==v[e]&&(c=n(v,e),u+=c.value,g.nameIndex=u,e=c.nextOffset),o.push(g),e<v.length&&","===v[e]&&e++;}}return o;}
-
-        originalPositionFor(position) {
-            let match = null;
-            const segments = this.mappings.filter(s => s.generatedLine === position.line);
-
-            if (!segments.length) {return { source: null, line: null, column: null, name: null };}
-            for (const s of segments) { if (s.generatedColumn <= position.column) {match = s;} else {break;} }
-            if (!match || match.sourceIndex === null) {return { source: null, line: null, column: null, name: null };}
-
-            return {
-                source: this.sources[match.sourceIndex] || null, line: match.sourceLine + 1, column: match.sourceColumn,
-                name: match.nameIndex !== null ? this.names[match.nameIndex] : null
-            };
-        }
-    };
-
-    static Error = class extends Error {
-        constructor(message, options = {}) { 
-            super(message, options); this.name = "StacklynError"; if (options.cause) { this.cause = options.cause; } 
-        }
-    };
 
     // == PARSING HELPERS
     static _getOperaStack(error) {
@@ -1148,36 +1165,57 @@ class Stacklyn {
         try {
             const operaStack = Stacklyn._getOperaStack(error);
             for (const line of operaStack.split("\n")) {
-                const carakanPrefixes = ["called via ", "called from ", "Error thrown ", "Error created ", "Error initially "];
+                const carakanPrefixes = [
+                    "called via ", "called from ", "Error thrown ",
+                    "Error created ", "Error initially "
+                ];
 
                 const isCarakan = carakanPrefixes.some(prefix => line.includes(prefix));
-                if (isCarakan) { mode = "carakan"; } else { mode = "linear-b"; }
+
+                if (isCarakan) {
+                    mode = "carakan";
+                } else {
+                    mode = "linear-b";
+                }
 
                 break;
             }
-        } catch { return mode; }
+        } catch (_) { 
+            return mode; 
+        }
 
         return mode;
     }
 
     // extract location from a path like https://example.com/file.js:1:2
     static _extractLocation(path, match = path.match(/:(\d+)(?::(\d+))?$/)) {
-        return { line: match ? +match[1] : null, column: match ? +match[2] : null };
+        return {
+            line: match ? +match[1] : null,
+            column: match ? +match[2] : null
+        };
     }
 
     // extract the filename from a path (feels redundant ik but this was used too much times it was enough to have a helper)
-    static _getFilename(path) { return decodeURIComponent(path.split("/").pop()); }
+    static _getFilename(path) { 
+        return decodeURIComponent(path.split("/").pop()); 
+    }
 
     // clean a sourceURL of any unneeded junk
     static _cleanPath(path, mode = "full") {
-        if (mode === "full") { return path.replace(/:\d+:\d+$/, "").replace(/\\/g, "/"); } // for logical paths
-        else if (mode === "partial") { return path.replace(/:\d+:\d+$/, ""); } // for virtual paths (e.g. <anonymous>:4:2)
+        const cleaned = path.replace(/:\d+:\d+$/, "");
+        if (mode === "full") { // for logical paths
+            return cleaned.replace(/\\/g, "/"); 
+        } else if (mode === "partial") { // for virtual paths (e.g. <anonymous>:4:2 or javascript:...:1:2)
+            return cleaned.replace(/:\d+:\d+$/, ""); 
+        }
     }
 
     // build the object seen in the results
     static _buildOutputObject({ frameInfo, extra = {} }) {
         const out = {
-            raw: frameInfo.raw, func: frameInfo.func, location: frameInfo.location,
+            raw: frameInfo.raw,
+            func: frameInfo.func,
+            location: frameInfo.location,
             ...extra || undefined
         };
         return out;
@@ -1197,7 +1235,7 @@ class Stacklyn {
             fileContent.length / lines.length > 100
         );
 
-        if (isMinified || lines.length < amount*2+1) { return; }
+        if (isMinified || lines.length < amount*2+1) return;
 
         return {
             contextabove: lines.slice(Math.max(0, frame.location.line - 1 - amount), frame.location.line - 1),
@@ -1210,19 +1248,69 @@ class Stacklyn {
     static _getEspruinoPairs(stack) {
         const frames = [], contexts = [], carets = [];
         stack.split("\n").forEach(line => {
-            if (line.startsWith("    at ")) { frames.push(line); } else { contexts.push(line); }
-            if (line.includes("  ^")) { carets.push(line); }
+            if (line.startsWith("    at ")) { 
+                frames.push(line);
+            } else if (line.includes("  ^")) {
+                carets.push(line);
+            } else {
+                contexts.push(line);
+            }
         });
         return frames.map((frame, i) => ({
-            frame, context: contexts[i]?.startsWith("    ") ? contexts[i].slice(4) : contexts[i], caret: carets[i]
+            frame,
+            context: contexts[i]?.startsWith("    ") ? contexts[i].slice(4) : contexts[i],
+            caret: carets[i]
         }));
     }
 
-    static _isValidError(error) { return error && typeof error === "object" && ["stack", "message", "stacktrace"].some(prop => prop in error); }
+    static _isValidError(error) { 
+        return error
+            && typeof error === "object"
+            && ["stack", "message", "stacktrace"].some(prop => prop in error);
+    }
 
     // filter out undefined from an array of objects
-    static _filterUndefined(arr) { return arr.map(obj => JSON.parse(JSON.stringify(obj, (_, value) => value === undefined ? undefined : value))); }
+    static _filterUndefined(arr) { 
+        return arr.map(obj => JSON.parse(JSON.stringify(obj, (_, value) => value === undefined ? undefined : value))); 
+    }
 }
+
+// == INTERNAL CLASSES (defined outside for ES6 compatibility)
+Stacklyn._SourceMapper = class {
+    constructor(map) {
+        this.sources = map.sources || [];
+        this.names = map.names || [];
+        this.mappings = this._parseMappings(map.mappings || "");
+    }
+
+    // this line is not meant to be touched im afraid, here be dragons!
+    // eslint-disable-next-line
+    _parseMappings(e){function n(e,t){let n=0,r=0,l; var a={}; for(let e=0; e<64;)a["ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[e]]=e++; for(;null==(l=a[e[t++]])?(()=>{throw new Stacklyn.Error("bad VLQ character");})():(n|=(31&l)<<r,r+=5,32&l););return{value:(n>>1)*(1&n?-1:1),nextOffset:t};}let r=0,l=0,a=0,f=0,u=0; var o=[],s=e.split(";"); for(let t=0; t<s.length; t++){let e=0; r=0; var v=s[t]; if(v)for(;e<v.length;){var c=n(v,e),g=(r+=c.value,e=c.nextOffset,{generatedLine:t+1,generatedColumn:r}); e<v.length&&","!==v[e]&&(c=n(v,e),l+=c.value,g.sourceIndex=l,c=n(v,e=c.nextOffset),a+=c.value,g.sourceLine=a,c=n(v,e=c.nextOffset),f+=c.value,g.sourceColumn=f,(e=c.nextOffset)<v.length)&&","!==v[e]&&(c=n(v,e),u+=c.value,g.nameIndex=u,e=c.nextOffset),o.push(g),e<v.length&&","===v[e]&&e++;}}return o;}
+
+    originalPositionFor(position) {
+        let match = null, segments = this.mappings.filter(s => s.generatedLine === position.line);
+
+        if (!segments.length) {return { source: null, line: null, column: null, name: null };}
+        for (const s of segments) { if (s.generatedColumn <= position.column) {match = s;} else {break;} }
+        if (!match || match.sourceIndex === null) {return { source: null, line: null, column: null, name: null };}
+
+        return {
+            source: this.sources[match.sourceIndex] || null, line: match.sourceLine + 1, column: match.sourceColumn,
+            name: match.nameIndex !== null ? this.names[match.nameIndex] : null
+        };
+    }
+};
+
+Stacklyn.Error = class extends Error {
+    constructor(message, options = {}) { 
+        super(message, options);
+        this.name = "StacklynError";
+
+        if (options.cause) {
+            this.cause = options.cause;
+        }
+    }
+};
 
 // export stacklyn
 if (typeof define === "function" && define.amd) {define("stacklyn", [], () => Stacklyn);} // AMD (RequireJS)

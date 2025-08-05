@@ -1,15 +1,15 @@
 {
     "name": "stacklyn",
     "description": "Turn JavaScript stack traces into structured data.",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "homepage": "https://github.com/stacklynjs/stacklyn#readme",
     "license": "Apache-2.0",
     "main": "./stacklyn.js",
     "exports": {
-        "import": "./stacklyn.js",
+        "import": "./stacklyn.mjs",
         "require": "./stacklyn.js"
     },
-    "browser": "./stacklyn.js",
+    "browser": "./dist/stacklyn.min.js",
     "bugs": {
         "url": "https://github.com/stacklynjs/stacklyn/issues",
         "email": "stacklynjs@proton.me"
@@ -23,12 +23,11 @@
         "url": "https://github.com/stacklynjs/stacklyn.git"
     },
     "keywords": [
-        "stacktrace",
-        "parse",
-        "stacktrace-parser",
-        "stacklyn",
-        "error",
-        "stack",
-        "error-stack"
-    ]
+        "stacktrace", "parse", "stacktrace-parser",
+        "stacklyn", "error", "stack", "error-stack"
+    ],
+
+    "scripts": {
+        "build": "node build.js"
+    }
 }
