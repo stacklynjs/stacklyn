@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="./images/stacklyn/Gradient.png" height="120">
+    <img src="https://raw.githubusercontent.com/stacklynjs/stacklyn/main/images/stacklyn/Gradient.png" height="120">
 </p>
 
 <h1 align="center">Stacklyn</h1>
@@ -59,18 +59,18 @@ And best of all, supports most stack trace formats you'll come across!
 <sub>*Stacklyn V2 will add even more cool stuff! See the [roadmap](#roadmap) to know more.*</sub>
 
 ### Supported Formats
-- <img height="24" src="./images/chrome.png" align="center">&nbsp; Chrome 3+ (V8)
-- <img height="24" src="./images/node.svg" align="center">&nbsp; Node.js (V8)
-- <img height="24" src="./images/electron.svg" align="center">&nbsp; Electron (V8)
-- <img height="24" src="./images/deno.svg" align="center">&nbsp; Deno (V8)
-- <img height="24" src="./images/firefox.png" align="center">&nbsp; Firefox 1+ (SpiderMonkey)
-- <img height="24" src="./images/safari.png" align="center">&nbsp; Safari 6+ (JSC)
-- <img height="24" src="./images/bun.svg" align="center">&nbsp; Bun (V8-JSC Hybrid)
-- <img height="24" src="./images/ie.png" align="center">&nbsp; IE 10+ (ChakraCore)
-- <img height="24" src="./images/edge.png" align="center">&nbsp; Edge Legacy (ChakraCore)
-- <img height="24" src="./images/opera.png" align="center">&nbsp; Opera \<15 (Linear B, Futhark, Carakan)
-- <img height="24" src="./images/netscape.png" align="center">&nbsp; Netscape 7+ (Mocha / SpiderMonkey)
-- <img height="24" src="./images/espruino.png" align="center">&nbsp; Espruino (not kidding)
+- <img height="24" src="https://raw.githubusercontent.com/stacklynjs/stacklyn/main/images/chrome.png"  align="center">&nbsp; Chrome 3+ (V8)
+- <img height="24" src="https://raw.githubusercontent.com/stacklynjs/stacklyn/main/images/node.svg"  align="center">&nbsp; Node.js (V8)
+- <img height="24" src="https://raw.githubusercontent.com/stacklynjs/stacklyn/main/images/electron.svg"  align="center">&nbsp; Electron (V8)
+- <img height="24" src="https://raw.githubusercontent.com/stacklynjs/stacklyn/main/images/deno.svg"  align="center">&nbsp; Deno (V8)
+- <img height="24" src="https://raw.githubusercontent.com/stacklynjs/stacklyn/main/images/firefox.png"  align="center">&nbsp; Firefox 1+ (SpiderMonkey)
+- <img height="24" src="https://raw.githubusercontent.com/stacklynjs/stacklyn/main/images/safari.png"  align="center">&nbsp; Safari 6+ (JSC)
+- <img height="24" src="https://raw.githubusercontent.com/stacklynjs/stacklyn/main/images/bun.svg"  align="center">&nbsp; Bun (V8-JSC Hybrid)
+- <img height="24" src="https://raw.githubusercontent.com/stacklynjs/stacklyn/main/images/ie.png"  align="center">&nbsp; IE 10+ (ChakraCore)
+- <img height="24" src="https://raw.githubusercontent.com/stacklynjs/stacklyn/main/images/edge.png"  align="center">&nbsp; Edge Legacy (ChakraCore)
+- <img height="24" src="https://raw.githubusercontent.com/stacklynjs/stacklyn/main/images/opera.png"  align="center">&nbsp; Opera \<15 (Linear B, Futhark, Carakan)
+- <img height="24" src="https://raw.githubusercontent.com/stacklynjs/stacklyn/main/images/netscape.png"  align="center">&nbsp; Netscape 7+ (Mocha / SpiderMonkey)
+- <img height="24" src="https://raw.githubusercontent.com/stacklynjs/stacklyn/main/images/espruino.png"  align="center">&nbsp; Espruino (not kidding)
 
 > [!NOTE]  
 > > "Why do the logos look old?"
@@ -78,7 +78,7 @@ And best of all, supports most stack trace formats you'll come across!
 > They show the *first* version that added stack trace support.  
 > However, all versions after the ones marked with a + are supported too.
 
-## <img src="./images/stacklyn/Red.png" height="32" align="center"> Import Stacklyn
+## <img src="https://raw.githubusercontent.com/stacklynjs/stacklyn/main/images/stacklyn/Red.png"  height="32" align="center"> Import Stacklyn
 Stacklyn supports all kinds of imports!
 1. As an HTML script tag:  
   <sub>*(note: Stacklyn is automatically placed as `window.Stacklyn` or `globalThis.Stacklyn` in the global scope if you do this)*</sub>
@@ -128,7 +128,7 @@ This means even in CSP'd environments (e.g. file://), you can still parse stack 
 - `overwrite` method to change the default runtime stack format, accepts a callback function
 ---
 
-## <img src="./images/stacklyn/Gold.png" height="32" align="center"> Contributing
+## <img src="https://raw.githubusercontent.com/stacklynjs/stacklyn/main/images/stacklyn/Gold.png"  height="32" align="center"> Contributing
 We welcome contributors!
 If you've found a bug, had a suggestion, etc. Feel free to submit an issue or PR!
 
