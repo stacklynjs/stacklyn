@@ -122,7 +122,8 @@ This means even in CSP'd environments (e.g. file://), you can still parse stack 
 
 ### V2 Roadmap
 - Extension System (`Stacklyn.createExtension`)
-- More Stack Formats (Graal.js, Hermes, JS-Interpreter, Duktape, XS, Jsish, NJS, Boa, QuickJS, LibJS)
+- More Stack Formats (Jsish, Boa)
+  - Graal.js, Hermes, JS-Interpreter, Duktape, XS, NJS, QuickJS, and LibJS will be added to `parseV8` as an `environment` if statement.
 - Parse Bluebird extended stack traces
 - `overwrite` method to change the default runtime stack format, accepts a callback function
 ---
