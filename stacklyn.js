@@ -34,7 +34,7 @@ class Stacklyn {
         }
 
         // some flags to make sure it parses correctly
-        const isV8Env = window?.chrome ;
+        const isV8Env = (typeof window !== 'undefined' && !!window.chrome) || typeof process !== "undefined";
         const canGetCallSites = !!(isV8Env && opts.ALLOW_CALLSITES === true && error instanceof Error);
 
         if (canGetCallSites) {
