@@ -89,10 +89,10 @@ Stacklyn supports all kinds of imports!
 1. For use in JavaScript code directly:
     ```js
     // 1. ES Modules
-    import Stacklyn from 'stacklyn';
+    import Stacklyn from "stacklyn";
     
     // 2. CommonJS (Node only)
-    const Stacklyn = require('stacklyn');
+    const Stacklyn = require("stacklyn");
     
     // 3. RequireJS
     require(["stacklyn"], function(Stacklyn){
