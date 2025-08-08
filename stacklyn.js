@@ -1077,16 +1077,7 @@ class Stacklyn {
             try { 
                 map = await (await fetch(mapURL)).json(); 
             } catch (error) {
-                if (typeof require !== "undefined") {
-                    const read = require("fs").readFileSync;
-                    const resolve = require("path").resolve;
-
-                    map = JSON.parse(read(resolve(__dirname, mapURL), "utf8"));
-                } else {
-                    throw new Stacklyn.Error(
-                        `Could not fetch source map ${mapURL}:`
-                        + `\n    ${error.toString()}`);
-                }
+                throw new Stacklyn.Error(`Could not fetch source map ${mapURL} (${error.toString()})\n Stacktrace:`);
             }
 
             const location = new Stacklyn._SourceMapper(map).originalPositionFor({ line, column });
