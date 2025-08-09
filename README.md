@@ -14,7 +14,7 @@
 
 <p align="center">
     <img src="https://img.shields.io/npm/v/stacklyn" alt="npm">
-    <img src="https://img.shields.io/bundlephobia/minzip/stacklyn?label=Gzipped&color=4c5eb4" alt="Gzipped: 7KiB">
+    <img src="https://img.shields.io/bundlejs/size/stacklyn?label=Gzipped&color=4c5eb4" alt="Gzipped: 7.5 kB">
     <img src="https://img.shields.io/badge/License-Apache--2.0-4B0082?style=flat" alt="License: Apache-2.0">
 </p>
 
