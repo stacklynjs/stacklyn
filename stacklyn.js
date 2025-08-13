@@ -189,7 +189,7 @@ class Stacklyn {
         }
 
         const isAnonLoc = ["native", "unknown location", "<anonymous>"]
-            .some(source => sourceURL === source);
+            .includes(sourceURL);
 
         const isAnonWithLine = ["native:", "<anonymous>:"]
             .some(source => sourceURL.startsWith(source));
@@ -246,7 +246,7 @@ class Stacklyn {
 
         } else if (rawName) {
             const isSafariLoc = ["global code", "module code", "eval code"]
-                .some(name => rawName === name);
+                .includes(rawName);
 
             if (isSafariLoc) {
                 env.host = "Bun";
@@ -774,8 +774,8 @@ class Stacklyn {
     }
 
     /** Turn a parsed frame object into a stack string
-     * @param {object} frame
-     * @returns {string} A string representing a stacktrace of the original format
+     * @param {object|object[]} frame A frame object (or an object[]) from the parse() method
+     * @returns {string|string[]} A string (or a string[]) representing a stacktrace of the original format
     */
     static stringify(frame) {
         // safeguard for people who input the parsed output directly
@@ -900,7 +900,7 @@ class Stacklyn {
                 indexStr = "#" + frame.location.script.index;
             }
 
-            const isEval = ["unknown", "function", "eval"].some(type => frame.location.script.type === type);
+            const isEval = ["unknown", "function", "eval"].includes(frame.location.script.type);
 
             out = `  Line ${frame.location.line} of ${frame.location.script.type}${indexStr} script`;
 
