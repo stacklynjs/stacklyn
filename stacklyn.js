@@ -1229,6 +1229,18 @@ class Stacklyn {
         if (isMinified || lines.length < amount*2+1) return;
 
         return {
+            raw: raw ?? "",
+            func: func ?? {},
+            location: {
+                contextabove: lines.slice(Math.max(0, frame.location.line - 1 - amount), frame.location.line - 1),
+                context: lines[frame.location.line - 1] ?? "",
+                contextbelow: lines.slice(frame.location.line, frame.location.line + amount),
+                ...frame.location
+            },
+            environment: frame.environment ?? {}
+        };
+        
+        return {
             contextabove: lines.slice(Math.max(0, frame.location.line - 1 - amount), frame.location.line - 1),
             context: lines[frame.location.line - 1] ?? "",
             contextbelow: lines.slice(frame.location.line, frame.location.line + amount),
